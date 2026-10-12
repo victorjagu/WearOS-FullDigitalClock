@@ -8,7 +8,8 @@ concurrency:
 run-name: >-
   ${{
     github.event_name == 'workflow_dispatch'
-    && (github.event.inputs.motivo != 'Autodetectar' && github.event.inputs.motivo != ''
+    && (
+      github.event.inputs.motivo != 'Autodetectar' && github.event.inputs.motivo != ''
       && format('Manual: {0}', github.event.inputs.motivo)
       || 'Compilación manual (Web)'
     )
@@ -53,16 +54,13 @@ jobs:
       run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/FullDigitalClock.apk
 
     - name: Firmar APK
-      uses: r0adkll/sign-android-release@v1
+      uses: r0adkll/sign-android-release@v2
       with:
         releaseDirectory: app/build/outputs/apk/debug
         signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
         alias: ${{ secrets.KEY_ALIAS }}
         keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
-      env:
-        # Esto fuerza a la acción a buscar el ejecutable zipalign dentro del SDK oficial de la máquina virtual
-        ANDROID_HOME: /usr/local/lib/android/sdk
 
     - name: Limpiar nombre del APK firmado
       run: mv app/build/outputs/apk/debug/FullDigitalClock-signed.apk app/build/outputs/apk/debug/FullDigitalClock.apk
