@@ -37,7 +37,7 @@ jobs:
       uses: actions/checkout@v4 # Soluciona aviso de Node 20
 
     - name: Configurar Java 17
-      uses: actions/setup-java@v4 # Versión recomendada para entornos Node 24
+      uses: actions/setup-java@v5 # Versión recomendada para entornos Node 24
       with:
         distribution: 'zulu'
         java-version: '17'
@@ -46,6 +46,7 @@ jobs:
       uses: gradle/actions/setup-gradle@v4.1.0 # Soluciona aviso de set-output
       with:
         gradle-version: "8.6"
+        cache-disabled: true
 
     - name: Compilar APK (Debug)
       # Forzamos el uso de gradle global ya que no usaremos el wrapper ./gradlew
