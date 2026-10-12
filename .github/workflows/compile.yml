@@ -6,7 +6,14 @@ concurrency:
   cancel-in-progress: true
 
 run-name: >-
-  ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.motivo != 'Autodetectar' && github.event.inputs.motivo != '' && format('Manual: {0}', github.event.inputs.motivo) || 'Procesando Compilación...' }}
+  ${{
+    github.event_name == 'workflow_dispatch'
+    && (github.event.inputs.motivo != 'Autodetectar' && github.event.inputs.motivo != ''
+      && format('Manual: {0}', github.event.inputs.motivo)
+      || 'Compilación manual (Web)'
+    )
+    || format('Commit: {0} ({1})', github.event.head_commit.message, github.event.commits[0].modified[0] || github.event.commits[0].added[0] || 'Varios archivos')
+  }}
   
 on:
   push:
@@ -27,26 +34,6 @@ jobs:
     steps:
     - name: Descargar el código del repositorio
       uses: actions/checkout@v4.2.2
-      with:
-        fetch-depth: 2 # Permite a Git comparar con el commit anterior
-
-    - name: Actualizar nombre de la ejecución con el archivo cambiado
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.motivo }}" != "Autodetectar" ] && [ "${{ github.event.inputs.motivo }}" != "" ]; then
-          echo "Se mantiene el título manual del input"
-        else
-          # Extrae el último archivo modificado o añadido en el commit
-          ULTIMO_ARCHIVO=$(git diff-tree --no-commit-id --name-only -r HEAD | head -n 1)
-          MSG_COMMIT=$(git log -1 --pretty=format:"%s")
-          
-          if [ -z "$ULTIMO_ARCHIVO" ]; then
-            ULTIMO_ARCHIVO="Varios archivos"
-          fi
-          
-          # Comando oficial de GitHub para renombrar la ejecución actual en la pestaña Actions
-          echo "GH_RUN_NAME=Commit: $MSG_COMMIT ($ULTIMO_ARCHIVO)" >> $GITHUB_ENV
-          echo "::notice::Renombrando ejecución a: Commit: $MSG_COMMIT ($ULTIMO_ARCHIVO)"
-        fi
         
     - name: Configurar Java 17
       uses: actions/setup-java@v5
@@ -67,15 +54,15 @@ jobs:
 
     - name: Firmar APK
       uses: r0adkll/sign-android-release@v1
-      env:
-        # Esto le indica a la acción exactamente dónde están los comandos zipalign y apksigner de la máquina
-        ANDROID_HOME: ${{ env.ANDROID_HOME }}
       with:
         releaseDirectory: app/build/outputs/apk/debug
         signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
         alias: ${{ secrets.KEY_ALIAS }}
         keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
+      env:
+        # Esto fuerza a la acción a buscar el ejecutable zipalign dentro del SDK oficial de la máquina virtual
+        ANDROID_HOME: /usr/local/lib/android/sdk
 
     - name: Limpiar nombre del APK firmado
       run: mv app/build/outputs/apk/debug/FullDigitalClock-signed.apk app/build/outputs/apk/debug/FullDigitalClock.apk
