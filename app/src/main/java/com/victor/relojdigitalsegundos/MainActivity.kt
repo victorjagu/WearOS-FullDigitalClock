@@ -48,19 +48,8 @@ class MainActivity : ComponentActivity() {
         // Nos aseguramos de limpiar la bandera al iniciar para evitar que se quede pegada
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        // Solicitamos permiso de notificaciones en Android 13+ (Wear OS 4+) antes de lanzar el servicio
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
-        }
-        
-        // Arrancamos tu nuevo MainService.
-        // Esto le avisa a Wear OS que la app tiene una tarea en curso y no debe cerrarse en segundo plano.
-        val intentService = Intent(this, MainService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intentService)
-        } else {
-            startService(intentService)
-        }
+        // Comprobamos y pedimos permisos adecuadamente antes de arrancar el servicio
+        CheckRightsAndStartService()
 
         // Interceptamos el cierre de Jetpack Compose cuando el usuario desliza por completo la pantalla para salir.
         onBackPressedDispatcher.addCallback(this) {
@@ -86,6 +75,41 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Comprueba el permiso de notificaciones (Android 13+) y decide si arranca el servicio o pide el permiso
+    private fun CheckRightsAndStartService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                StartService()
+            } else {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        } else {
+            StartService()
+        }
+    }
+
+    // Inicia de forma segura el servicio en primer plano
+    private fun StartService() {
+        val intentService = Intent(this, MainService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intentService)
+        } else {
+            startService(intentService)
+        }
+    }
+
+    // Callback que se ejecuta cuando el usuario acepta o rechaza el diálogo de permisos
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 101) {
+            StartService()
+        }
+    }
+    
     // Activa o desactiva de forma dinámica la bandera para mantener la pantalla encendida
     private fun toggleKeepScreenOn(keepOn: Boolean) {
         if (keepOn) {
@@ -102,6 +126,8 @@ class MainActivity : ComponentActivity() {
         isClockRunning = true 
         isKeepScreenOnEnabledRaw = false
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Aseguramos que el servicio vuelva a arrancar si por algún motivo fue detenido
+        iniciarServicio()
     }
     
     override fun onStop() {
