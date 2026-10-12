@@ -18,7 +18,7 @@ on:
 
   workflow_dispatch:
     inputs:
-      motivo:
+      .:
         description: "Título de la ejecución"
         required: false
         default: ""
