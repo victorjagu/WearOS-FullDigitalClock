@@ -71,5 +71,11 @@ class MainService : Service() {
         // 2. Detener el servicio por completo para eliminar el proceso
         stopSelf()
     }
-    
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // START_STICKY le dice al sistema que si el servicio es destruido por falta de memoria, 
+        // intente recrearlo tan pronto como vuelva a haber recursos disponibles.
+        return START_STICKY
+    }
+
 }
