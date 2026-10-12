@@ -8,7 +8,11 @@ concurrency:
 run-name: >-
   ${{
     github.event_name == 'workflow_dispatch'
-    && format('Compilación manual: {0}', github.event.inputs.motivo)
+    && (
+      github.event.inputs.motivo != ''
+      && format('Manual: {0}', github.event.inputs.motivo)
+      || 'Compilación manual'
+    )
     || format('Commit: {0}', github.event.head_commit.message)
   }}
   
@@ -30,20 +34,21 @@ jobs:
 
     steps:
     - name: Descargar el código del repositorio
-      uses: actions/checkout@v4.2.2
-        
+      uses: actions/checkout@v4 # Soluciona aviso de Node 20
+
     - name: Configurar Java 17
-      uses: actions/setup-java@v5
+      uses: actions/setup-java@v4 # Versión recomendada para entornos Node 24
       with:
         distribution: 'zulu'
         java-version: '17'
 
     - name: Configurar Entorno Oficial de Gradle
-      uses: gradle/actions/setup-gradle@v4
+      uses: gradle/actions/setup-gradle@v4.1.0 # Soluciona aviso de set-output
       with:
         gradle-version: "8.6"
 
     - name: Compilar APK (Debug)
+      # Forzamos el uso de gradle global ya que no usaremos el wrapper ./gradlew
       run: gradle assembleDebug --no-daemon
 
     - name: Renombrar archivo APK
@@ -58,14 +63,13 @@ jobs:
         keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
       env:
-        # Forzar el uso de una versión estable de build-tools en el runner
         BUILD_TOOLS_VERSION: "34.0.0"
 
     - name: Limpiar nombre del APK firmado
       run: mv app/build/outputs/apk/debug/FullDigitalClock-signed.apk app/build/outputs/apk/debug/FullDigitalClock.apk
       
     - name: Guardar y mostrar el APK generado
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.4.0 # Soluciona aviso de Node 20
       with:
         name: Full Digital Clock
         path: "app/build/outputs/apk/debug/FullDigitalClock.apk"
