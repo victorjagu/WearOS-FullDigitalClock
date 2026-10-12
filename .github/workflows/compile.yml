@@ -8,12 +8,8 @@ concurrency:
 run-name: >-
   ${{
     github.event_name == 'workflow_dispatch'
-    && (
-      github.event.inputs.motivo != 'Autodetectar' && github.event.inputs.motivo != ''
-      && format('Manual: {0}', github.event.inputs.motivo)
-      || 'Compilación manual (Web)'
-    )
-    || format('Commit: {0} ({1})', github.event.head_commit.message, github.event.commits[0].modified[0] || github.event.commits[0].added[0] || 'Varios archivos')
+    && format('Compilación manual: {0}', github.event.inputs.motivo)
+    || format('Commit: {0}', github.event.head_commit.message)
   }}
   
 on:
@@ -25,7 +21,7 @@ on:
       motivo:
         description: "Título de la ejecución"
         required: false
-        default: "Autodetectar"
+        default: ""
         type: string
 
 jobs:
@@ -54,13 +50,16 @@ jobs:
       run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/FullDigitalClock.apk
 
     - name: Firmar APK
-      uses: r0adkll/sign-android-release@v2
+      uses: r0adkll/sign-android-release@v1
       with:
         releaseDirectory: app/build/outputs/apk/debug
         signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
         alias: ${{ secrets.KEY_ALIAS }}
         keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
+      env:
+        # Forzar el uso de una versión estable de build-tools en el runner
+        BUILD_TOOLS_VERSION: "34.0.0"
 
     - name: Limpiar nombre del APK firmado
       run: mv app/build/outputs/apk/debug/FullDigitalClock-signed.apk app/build/outputs/apk/debug/FullDigitalClock.apk
