@@ -37,19 +37,18 @@ jobs:
 
     steps:
     - name: Descargar el código del repositorio
-      uses: actions/checkout@v4.2.2
+      uses: actions/checkout@v4
 
     - name: Configurar Java 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v6
       with:
         distribution: 'zulu'
         java-version: '17'
 
     - name: Configurar Entorno Oficial de Gradle
-      uses: gradle/actions/setup-gradle@v4.2.1
+      uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: "8.6"
-        cache-disabled: true
 
     # 1. Determinamos dinámicamente las variables según el evento o la selección del usuario
     - name: Configurar variables de compilación
@@ -74,6 +73,7 @@ jobs:
         echo "ORIGINAL_APK=$ORIGINAL_APK" >> $GITHUB_ENV
         echo "BUILD_TYPE=$BUILD_TYPE" >> $GITHUB_ENV
 
+    # Solución definitiva sin dependencias locales: Se usa el ejecutable global 'gradle'
     - name: Compilar APK (${{ env.BUILD_TYPE }})
       run: gradle ${{ env.GRADLE_TASK }} --no-daemon
 
@@ -95,7 +95,7 @@ jobs:
       run: mv ${{ env.APK_DIR }}/FullDigitalClock-signed.apk ${{ env.APK_DIR }}/FullDigitalClock.apk
       
     - name: Guardar y mostrar el APK generado
-      uses: actions/upload-artifact@v4.4.3
+      uses: actions/upload-artifact@v4
       with:
         name: Full Digital Clock (${{ env.BUILD_TYPE }})
         path: "${{ env.APK_DIR }}/FullDigitalClock.apk"
