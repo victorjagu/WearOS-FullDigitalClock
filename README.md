@@ -64,7 +64,8 @@ Run the following command in your terminal, replacing `app-release.apk` with the
 ```bash
 adb install app-release.apk
 ```
-
+   *(Note: If you are updating an existing installation, use `adb install -r app-release.apk` to reinstall and keep your saved settings).*
+   
 > 💡 **Tip:** If the installation fails with a `Targeting R+` or architecture mismatch error, ensure your build matches the specific chipset architecture of your watch (usually `armeabi-v7a` or `arm64-v8a`).
 
 Once the terminal outputs `Success`, the application will be available in your watch's app drawer!
