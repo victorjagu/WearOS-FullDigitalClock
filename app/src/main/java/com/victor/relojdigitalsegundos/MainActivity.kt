@@ -48,8 +48,19 @@ class MainActivity : ComponentActivity() {
         // Nos aseguramos de limpiar la bandera al iniciar para evitar que se quede pegada
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        // Comprobamos y pedimos permisos adecuadamente antes de arrancar el servicio
-        CheckRightsAndStartService()
+        // Comprueba el permiso de notificaciones (Android 13+) y decide si arranca el servicio o pide el permiso
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                // El permiso ya está concedido, iniciamos el servicio con seguridad
+                StartService()
+            } else {
+                // Solicitamos el permiso asíncronamente
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        } else {
+            // Versiones anteriores a Android 13 no requieren este permiso en tiempo de ejecución
+            StartService()
+        }
 
         // Interceptamos el cierre de Jetpack Compose cuando el usuario desliza por completo la pantalla para salir.
         onBackPressedDispatcher.addCallback(this) {
@@ -74,21 +85,8 @@ class MainActivity : ComponentActivity() {
             )
         }
     }
-
-    // Comprueba el permiso de notificaciones (Android 13+) y decide si arranca el servicio o pide el permiso
-    private fun CheckRightsAndStartService() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                StartService()
-            } else {
-                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
-            }
-        } else {
-            StartService()
-        }
-    }
-
-    // Inicia de forma segura el servicio en primer plano
+    
+    // Método auxiliar para centralizar el inicio del servicio
     private fun StartService() {
         val intentService = Intent(this, MainService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -100,16 +98,16 @@ class MainActivity : ComponentActivity() {
 
     // Callback que se ejecuta cuando el usuario acepta o rechaza el diálogo de permisos
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
+            requestCode: Int, 
+            permissions: Array<out String>, 
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 101) {
+        if (requestCode == 101 && grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
             StartService()
         }
     }
-    
+
     // Activa o desactiva de forma dinámica la bandera para mantener la pantalla encendida
     private fun toggleKeepScreenOn(keepOn: Boolean) {
         if (keepOn) {
@@ -126,8 +124,6 @@ class MainActivity : ComponentActivity() {
         isClockRunning = true 
         isKeepScreenOnEnabledRaw = false
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        // Aseguramos que el servicio vuelva a arrancar si por algún motivo fue detenido
-        iniciarServicio()
     }
     
     override fun onStop() {
