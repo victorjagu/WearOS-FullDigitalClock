@@ -8,7 +8,10 @@ concurrency:
 run-name: >-
   ${{
     github.event_name == 'workflow_dispatch'
-    && format('Compilación manual: {0}', github.event.inputs.motivo)
+    && (github.event.inputs.motivo != 'Autodetectar' && github.event.inputs.motivo != ''
+      && format('Compilación manual: {0}', github.event.inputs.motivo)
+      || format('Compilación manual: {0} ({1})', github.event.head_commit.message, github.event.head_commit.modified[0] || github.event.head_commit.added[0] || 'Varios archivos')
+    )
     || format('Commit: {0}', github.event.head_commit.message)
   }}
   
@@ -20,8 +23,8 @@ on:
     inputs:
       motivo:
         description: "Título de la ejecución"
-        required: true
-        default: "Compilación manual"
+        required: false
+        default: "Autodetectar"
         type: string
 
 jobs:
