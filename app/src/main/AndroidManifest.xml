@@ -26,6 +26,9 @@
             android:name=".MainService"
             android:foregroundServiceType="specialUse"
             android:exported="false" />
+            <property
+            android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+            android:value="Full Digital Clock Ongoing Activity for Wear OS" />
 
     </application>
 </manifest>
