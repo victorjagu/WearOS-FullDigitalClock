@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       motivo:
-        description: "Título / Motivo de la ejecución"
+        description: "Título de la ejecución"
         required: false
         default: "Compilación manual"
         type: string
