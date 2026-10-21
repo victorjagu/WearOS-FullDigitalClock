@@ -48,20 +48,6 @@ class MainActivity : ComponentActivity() {
         // Nos aseguramos de limpiar la bandera al iniciar para evitar que se quede pegada
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        // Comprueba el permiso de notificaciones (Android 13+) y decide si arranca el servicio o pide el permiso
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                // El permiso ya está concedido, iniciamos el servicio con seguridad
-                StartService()
-            } else {
-                // Solicitamos el permiso asíncronamente
-                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
-            }
-        } else {
-            // Versiones anteriores a Android 13 no requieren este permiso en tiempo de ejecución
-            StartService()
-        }
-
         // Interceptamos el cierre de Jetpack Compose cuando el usuario desliza por completo la pantalla para salir.
         onBackPressedDispatcher.addCallback(this) {
             // 1. Apagamos el segundero
@@ -89,10 +75,15 @@ class MainActivity : ComponentActivity() {
     // Método auxiliar para centralizar el inicio del servicio
     private fun StartService() {
         val intentService = Intent(this, MainService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intentService)
-        } else {
-            startService(intentService)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intentService)
+            } else {
+                startService(intentService)
+            }
+        } catch (e: Exception) {
+            // Captura cualquier restricción del sistema operativo evitando el cierre de la app
+            // e.printStackTrace()
         }
     }
 
@@ -124,6 +115,20 @@ class MainActivity : ComponentActivity() {
         isClockRunning = true 
         isKeepScreenOnEnabledRaw = false
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        // Comprueba el permiso de notificaciones (Android 13+) y decide si arranca el servicio o pide el permiso
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                // El permiso ya está concedido, iniciamos el servicio con seguridad
+                StartService()
+            } else {
+                // Solicitamos el permiso asíncronamente
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        } else {
+            // Versiones anteriores a Android 13 no requieren este permiso en tiempo de ejecución
+            StartService()
+        }
     }
     
     override fun onStop() {
